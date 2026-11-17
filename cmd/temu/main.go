@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/jgalea/temu-cli/internal/browser"
 	"github.com/jgalea/temu-cli/internal/orders"
@@ -156,9 +157,9 @@ func run(args []string) error {
 			return nil
 		}
 		for _, o := range got {
-			fmt.Printf("%s  %s  %s  [%s]  items: %s\n", o.ID, o.Date, o.Total, o.Status, o.Count)
+			fmt.Printf("%s  %s  %s  [%s]  items: %s\n", plain(o.ID), plain(o.Date), plain(o.Total), plain(o.Status), plain(o.Count))
 			for _, it := range o.Items {
-				fmt.Printf("    %s  x%s  %s\n", truncate(it.Title, 90), it.Qty, it.Price)
+				fmt.Printf("    %s  x%s  %s\n", truncate(it.Title, 90), plain(it.Qty), plain(it.Price))
 			}
 		}
 		return nil
@@ -207,10 +208,21 @@ func login(profile string) error {
 	return nil
 }
 
+// plain drops control characters, so text a seller wrote cannot carry
+// terminal escape sequences into the output.
+func plain(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, s)
+}
+
 func truncate(s string, n int) string {
-	r := []rune(s)
+	r := []rune(plain(s))
 	if len(r) <= n {
-		return s
+		return string(r)
 	}
 	return string(r[:n-1]) + "…"
 }
